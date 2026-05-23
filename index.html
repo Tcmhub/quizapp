@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CALE模擬測試系統 by TCMHUB (FSRS智慧排程版)</title>
+    <title>中醫藥與針灸 模擬測試系統 (FSRS智慧排程版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; }
@@ -54,6 +54,65 @@
             </form>
         </div>
 
+        <!-- Verify Screen -->
+        <div id="verify-screen" class="hidden bg-white rounded-2xl shadow-sm border p-8 text-center mt-10 max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-2 text-blue-800">管理員安全驗證</h2>
+            <p class="text-slate-500 mb-6 text-sm">此信箱已綁定管理權限，請輸入二次驗證碼。</p>
+            <form id="verify-form" onsubmit="handleVerify(event)" class="text-left">
+                <div class="mb-5">
+                    <label class="block text-slate-700 font-bold mb-2 text-sm" for="verify-code">6位數驗證碼 <span class="text-xs font-normal text-blue-500">(測試請輸: 123456)</span></label>
+                    <input type="text" id="verify-code" required maxlength="6" placeholder="123456" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition tracking-widest text-center text-lg font-mono">
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" onclick="cancelVerify()" class="flex-1 border border-slate-300 hover:bg-slate-50 text-slate-600 font-bold py-3 rounded-lg shadow-sm transition">
+                        取消
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow transition">
+                        確認
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Admin Screen -->
+        <div id="admin-screen" class="hidden bg-white rounded-2xl shadow-sm border p-6 md:p-8 mt-6">
+            <h2 class="text-2xl font-bold mb-6 text-blue-800 flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> 
+                系統管理員後台
+            </h2>
+            
+            <!-- 題庫管理區塊 -->
+            <div class="mb-8 border-b border-slate-200 pb-6">
+                <label class="block text-slate-700 font-bold mb-3">大量題庫匯入 (支援多檔上傳)</label>
+                <div class="flex items-center gap-4">
+                    <input type="file" id="file-upload" multiple accept=".txt" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition">
+                    <button type="button" onclick="importQuestions()" class="shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition">一鍵匯入</button>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">請直接選取您電腦中的「現場測試1~4」文字檔上傳。系統會自動解析合併並永久保存在本機。</p>
+            </div>
+
+            <!-- 使用者報告 -->
+            <div>
+                <h3 class="text-lg font-bold mb-4 text-slate-700">所有登陸者使用報告</h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                                <th class="p-3 font-semibold">登錄郵箱</th>
+                                <th class="p-3 font-semibold">最後登錄時間</th>
+                                <th class="p-3 font-semibold">登錄 IP</th>
+                                <th class="p-3 font-semibold">累積使用時間</th>
+                                <th class="p-3 font-semibold">已學習題目數</th>
+                                <th class="p-3 font-semibold">錯題總次數</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-tbody" class="text-sm text-slate-600 divide-y divide-slate-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Start Screen -->
         <div id="start-screen" class="hidden bg-white rounded-2xl shadow-sm border p-8 text-center mt-10">
             <h2 class="text-3xl font-bold mb-4 text-blue-800">中醫與針灸 綜合模擬測驗</h2>
@@ -89,16 +148,6 @@
                             未學習新題：<span id="new-count" class="font-bold text-green-600 text-base">0</span> 題
                         </div>
                     </div>
-                </div>
-
-                <!-- 題庫管理區塊 (僅限管理員) -->
-                <div id="admin-import-section" class="hidden mb-6 border-b border-slate-200 pb-5">
-                    <label class="block text-slate-700 font-bold mb-3">大量題庫匯入 (支援多檔上傳) - <span class="text-red-500 font-normal text-sm">管理員專屬功能</span></label>
-                    <div class="flex items-center gap-4">
-                        <input type="file" id="file-upload" multiple accept=".txt" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition">
-                        <button type="button" onclick="importQuestions()" class="shrink-0 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition">一鍵匯入</button>
-                    </div>
-                    <p class="text-xs text-slate-500 mt-2">請直接選取您電腦中的「現場測試1~4」文字檔上傳。系統會自動解析合併並永久保存在本機。</p>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -970,6 +1019,7 @@ let timeLeft = 50 * 60; // default in seconds
 let timer = null;
 let totalQuestionsSetting = 50;
 let currentUser = null;
+let sessionStartTime = 0;
 
 // 初始化
 window.onload = () => {
@@ -994,7 +1044,11 @@ window.onload = () => {
     // 檢查是否有儲存的登入狀態
     const savedUser = localStorage.getItem('tcm_quiz_current_user');
     if (savedUser) {
-        loginUser(savedUser);
+        if (savedUser === 'jamesz@tcmhub.org') {
+            loginAdmin();
+        } else {
+            loginUser(savedUser);
+        }
     }
     
     // 模式切換事件
@@ -1002,6 +1056,14 @@ window.onload = () => {
         radio.addEventListener('change', updateStartScreenStats);
     });
 };
+
+// 離開網頁前結算使用時間
+window.addEventListener('beforeunload', () => {
+    if (currentUser && currentUser !== 'jamesz@tcmhub.org' && sessionStartTime) {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        updateUserStats(currentUser, elapsed);
+    }
+});
 
 // 處理大量題庫匯入
 function importQuestions() {
@@ -1060,54 +1122,166 @@ function importQuestions() {
 function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('user-email').value.trim().toLowerCase();
-    if (email) {
+    
+    if (email === 'jamesz@tcmhub.org') {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('verify-screen').classList.remove('hidden');
+        document.getElementById('verify-code').focus();
+    } else if (email) {
         loginUser(email);
     }
+}
+
+function handleVerify(e) {
+    e.preventDefault();
+    const code = document.getElementById('verify-code').value.trim();
+    if (code === '123456') {
+        loginAdmin();
+    } else {
+        alert('驗證碼錯誤！請重新輸入。(測試碼為: 123456)');
+        document.getElementById('verify-code').value = '';
+    }
+}
+
+function cancelVerify() {
+    document.getElementById('verify-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('verify-code').value = '';
+}
+
+function loginAdmin() {
+    currentUser = 'jamesz@tcmhub.org';
+    localStorage.setItem('tcm_quiz_current_user', currentUser);
+    sessionStartTime = Date.now();
+    
+    // UI 切換
+    document.getElementById('verify-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.remove('hidden');
+    
+    document.getElementById('user-info').classList.remove('hidden');
+    document.getElementById('user-info').classList.add('flex');
+    document.getElementById('display-email').innerText = '管理員 (jamesz)';
+    
+    renderAdminDashboard();
 }
 
 function loginUser(email) {
     currentUser = email;
     localStorage.setItem('tcm_quiz_current_user', email);
+    sessionStartTime = Date.now();
+    
+    // 紀錄登錄時間與建立統計
+    updateUserStats(email, 0);
     
     // 載入該使用者的進度
     loadUserFSRSData();
     
     // UI 切換
     document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('verify-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
     document.getElementById('start-screen').classList.remove('hidden');
+    
     document.getElementById('user-info').classList.remove('hidden');
     document.getElementById('user-info').classList.add('flex');
     document.getElementById('display-email').innerText = email;
 
-    // 檢查管理員權限：僅 jamesz@tcmhub.org 顯示匯入題庫區塊
-    if (email === 'jamesz@tcmhub.org') {
-        document.getElementById('admin-import-section').classList.remove('hidden');
-    } else {
-        document.getElementById('admin-import-section').classList.add('hidden');
-    }
-    
     updateStartScreenStats();
 }
 
 function logout() {
+    // 若為一般使用者，登出時結算累積時間
+    if (currentUser && currentUser !== 'jamesz@tcmhub.org' && sessionStartTime) {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        updateUserStats(currentUser, elapsed);
+    }
+
     currentUser = null;
+    sessionStartTime = 0;
     localStorage.removeItem('tcm_quiz_current_user');
     
     // UI 切換
     document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
+    document.getElementById('verify-screen').classList.add('hidden');
     document.getElementById('login-screen').classList.remove('hidden');
+    
     document.getElementById('user-info').classList.add('hidden');
     document.getElementById('user-info').classList.remove('flex');
     document.getElementById('user-email').value = '';
-    
-    // 隱藏管理員匯入區塊
-    document.getElementById('admin-import-section').classList.add('hidden');
+    document.getElementById('verify-code').value = '';
     
     // 清除可能進行中的測驗畫面
     clearInterval(timer);
     document.getElementById('quiz-screen').classList.add('hidden');
     document.getElementById('result-screen').classList.add('hidden');
     document.getElementById('timer-display').classList.add('hidden');
+}
+
+// 產生綁定郵箱的模擬 IP 供展示
+function getMockIP(email) {
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) {
+        hash = email.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const b1 = Math.abs((hash >> 24) & 255);
+    const b2 = Math.abs((hash >> 16) & 255);
+    return `114.${b1}.${b2}.${Math.abs(hash & 255)}`;
+}
+
+// 更新統計資料
+function updateUserStats(email, additionalSeconds) {
+    let stats = JSON.parse(localStorage.getItem('tcm_quiz_users_stats')) || {};
+    if (!stats[email]) {
+        stats[email] = {
+            ip: getMockIP(email),
+            lastLogin: Date.now(),
+            totalSeconds: 0
+        };
+    } else if (additionalSeconds === 0) {
+        stats[email].lastLogin = Date.now(); // 僅登錄時更新時間戳
+    }
+    stats[email].totalSeconds += additionalSeconds;
+    localStorage.setItem('tcm_quiz_users_stats', JSON.stringify(stats));
+}
+
+// 渲染管理員報表
+function renderAdminDashboard() {
+    const stats = JSON.parse(localStorage.getItem('tcm_quiz_users_stats')) || {};
+    const tbody = document.getElementById('admin-tbody');
+    let html = '';
+    
+    for (const email in stats) {
+        if (email === 'jamesz@tcmhub.org') continue; 
+        
+        const userStats = stats[email];
+        const fsrsData = JSON.parse(localStorage.getItem(`tcm_quiz_fsrs_data_${email}`)) || {};
+        
+        let learnedCount = Object.keys(fsrsData).length;
+        let lapseCount = 0;
+        for (const qId in fsrsData) {
+            lapseCount += fsrsData[qId].lapses || 0;
+        }
+        
+        const loginTime = new Date(userStats.lastLogin).toLocaleString('zh-TW', { hour12: false });
+        const minutes = Math.floor(userStats.totalSeconds / 60);
+        
+        html += `<tr class="hover:bg-slate-50 transition">
+            <td class="p-3 border-b border-slate-100 font-medium text-slate-800">${email}</td>
+            <td class="p-3 border-b border-slate-100">${loginTime}</td>
+            <td class="p-3 border-b border-slate-100 font-mono text-xs">${userStats.ip}</td>
+            <td class="p-3 border-b border-slate-100">${minutes} 分鐘</td>
+            <td class="p-3 border-b border-slate-100 text-blue-600 font-semibold">${learnedCount}</td>
+            <td class="p-3 border-b border-slate-100 text-red-500 font-semibold">${lapseCount} 次</td>
+        </tr>`;
+    }
+    
+    if (!html) {
+        html = '<tr><td colspan="6" class="p-6 border-b text-center text-slate-500 bg-slate-50 rounded-lg">尚無一般使用者登錄紀錄</td></tr>';
+    }
+    tbody.innerHTML = html;
 }
 
 function updateStartScreenStats() {
@@ -1298,6 +1472,13 @@ function submitQuiz() {
     document.getElementById('quiz-screen').classList.add('hidden');
     document.getElementById('timer-display').classList.add('hidden');
     document.getElementById('result-screen').classList.remove('hidden');
+
+    // 結算當次測驗時間
+    if (currentUser && currentUser !== 'jamesz@tcmhub.org' && sessionStartTime) {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        updateUserStats(currentUser, elapsed);
+        sessionStartTime = Date.now(); // 重置計時，避免重複計算
+    }
 
     const isFsrsMode = document.querySelector('input[name="quiz-mode"]:checked').value === 'fsrs';
     let correctCount = 0;
